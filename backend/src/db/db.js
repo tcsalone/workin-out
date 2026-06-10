@@ -26,9 +26,19 @@ db.execAsync = promisify(db.exec.bind(db));
 
 // Initialize database (using exec for multiple statements)
 async function initializeDatabase() {
-  // Enable foreign keys and WAL mode
+  // Enable foreign keys and journal mode
   await db.runAsync('PRAGMA foreign_keys = ON');
-  await db.runAsync('PRAGMA journal_mode = WAL');
+  const journalMode = process.env.SQLITE_JOURNAL_MODE || 'WAL';
+  try {
+    await db.runAsync(`PRAGMA journal_mode = ${journalMode}`);
+  } catch (err) {
+    console.warn(`Failed to set journal mode to ${journalMode}, falling back to DELETE:`, err.message);
+    try {
+      await db.runAsync('PRAGMA journal_mode = DELETE');
+    } catch (fallbackErr) {
+      console.error('Failed to set fallback journal mode:', fallbackErr.message);
+    }
+  }
 
   // Initialize schema (exec supports multiple statements)
   const schemaPath = join(__dirname, 'schema.sql');
