@@ -55,9 +55,39 @@ export function useUpdateSet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }) => api.updateSet(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workout'] });
+    mutationFn: ({ id, data, workoutId }) => api.updateSet(id, data),
+    // Optimistic update - UI updates instantly before server responds
+    onMutate: async ({ id, data, workoutId }) => {
+      if (!workoutId) return; // Skip optimistic update if no workoutId
+
+      // Cancel any ongoing queries for this workout
+      await queryClient.cancelQueries({ queryKey: ['workout', workoutId] });
+
+      // Snapshot current data for rollback
+      const previousWorkout = queryClient.getQueryData(['workout', workoutId]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(['workout', workoutId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          sets: old.sets.map(s => s.id === id ? { ...s, ...data } : s)
+        };
+      });
+
+      return { previousWorkout, workoutId };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousWorkout && context?.workoutId) {
+        queryClient.setQueryData(['workout', context.workoutId], context.previousWorkout);
+      }
+    },
+    onSuccess: (_, { workoutId }) => {
+      // Only invalidate THIS specific workout, not all workouts
+      if (workoutId) {
+        queryClient.invalidateQueries({ queryKey: ['workout', workoutId], exact: true });
+      }
     },
   });
 }
@@ -66,9 +96,33 @@ export function useDeleteSet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id) => api.deleteSet(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workout'] });
+    mutationFn: ({ id, workoutId }) => api.deleteSet(id),
+    onMutate: async ({ id, workoutId }) => {
+      if (!workoutId) return;
+
+      await queryClient.cancelQueries({ queryKey: ['workout', workoutId] });
+      const previousWorkout = queryClient.getQueryData(['workout', workoutId]);
+
+      // Optimistically remove the set
+      queryClient.setQueryData(['workout', workoutId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          sets: old.sets.filter(s => s.id !== id)
+        };
+      });
+
+      return { previousWorkout, workoutId };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousWorkout && context?.workoutId) {
+        queryClient.setQueryData(['workout', context.workoutId], context.previousWorkout);
+      }
+    },
+    onSuccess: (_, { workoutId }) => {
+      if (workoutId) {
+        queryClient.invalidateQueries({ queryKey: ['workout', workoutId], exact: true });
+      }
     },
   });
 }

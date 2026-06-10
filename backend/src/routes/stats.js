@@ -181,32 +181,38 @@ router.get('/last-session/:exercise_id', async (req, res) => {
   try {
     const { exercise_id } = req.params;
 
-    // Get last workout that included this exercise and was completed
-    const lastWorkout = await db.getAsync(`
-      SELECT w.id, w.date, w.completed_at
-      FROM workouts w
-      JOIN workout_sets ws ON w.id = ws.workout_id
+    // Single optimized query with JOIN - fetches workout + sets in one round-trip
+    const sets = await db.allAsync(`
+      SELECT
+        ws.set_number,
+        ws.is_warmup,
+        ws.reps,
+        ws.weight,
+        ws.completed,
+        w.date
+      FROM workout_sets ws
+      JOIN workouts w ON ws.workout_id = w.id
       WHERE ws.exercise_id = ?
         AND w.completed_at IS NOT NULL
-      ORDER BY w.date DESC, w.completed_at DESC
-      LIMIT 1
-    `, exercise_id);
+        AND ws.workout_id = (
+          SELECT w2.id
+          FROM workouts w2
+          JOIN workout_sets ws2 ON w2.id = ws2.workout_id
+          WHERE ws2.exercise_id = ?
+            AND w2.completed_at IS NOT NULL
+          ORDER BY w2.date DESC, w2.completed_at DESC
+          LIMIT 1
+        )
+      ORDER BY ws.set_number ASC
+    `, exercise_id, exercise_id);
 
-    if (!lastWorkout) {
+    if (!sets || sets.length === 0) {
       return res.json({ session: null });
     }
 
-    // Get all sets from that workout for this exercise
-    const sets = await db.allAsync(`
-      SELECT set_number, is_warmup, reps, weight, completed
-      FROM workout_sets
-      WHERE workout_id = ? AND exercise_id = ?
-      ORDER BY set_number
-    `, lastWorkout.id, exercise_id);
-
     res.json({
       session: {
-        date: lastWorkout.date,
+        date: sets[0].date,
         warmupSets: sets.filter(s => s.is_warmup),
         workingSets: sets.filter(s => !s.is_warmup)
       }

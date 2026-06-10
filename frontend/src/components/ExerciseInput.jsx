@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useLastWeight, usePR, useLastSession } from '../hooks/useExercises';
 import PlateCalculator from './PlateCalculator';
 import WeightInput from './WeightInput';
@@ -73,7 +73,7 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
     setsToCreate.forEach(set => onAddSet(set));
   }, [exercise.id]); // Re-run when exercise changes
 
-  const handleToggleSet = (set) => {
+  const handleToggleSet = useCallback((set) => {
     // Check if this is a new PR (only for working sets being marked complete)
     if (!set.completed && !set.is_warmup && set.weight) {
       const currentPR = pr?.weight || 0;
@@ -84,49 +84,49 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
       }
     }
 
-    onUpdateSet(set.id, { completed: set.completed ? 0 : 1 });
-  };
+    onUpdateSet(set.id, { completed: set.completed ? 0 : 1 }, workoutId);
+  }, [pr, onUpdateSet, workoutId]);
 
-  const handleWeightChange = (set, newWeight) => {
-    onUpdateSet(set.id, { weight: newWeight });
-  };
+  const handleWeightChange = useCallback((set, newWeight) => {
+    onUpdateSet(set.id, { weight: newWeight }, workoutId);
+  }, [onUpdateSet, workoutId]);
 
-  const handleRepsChange = (set, newReps) => {
-    onUpdateSet(set.id, { reps: newReps });
-  };
+  const handleRepsChange = useCallback((set, newReps) => {
+    onUpdateSet(set.id, { reps: newReps }, workoutId);
+  }, [onUpdateSet, workoutId]);
 
-  const openWeightSelector = (set) => {
+  const openWeightSelector = useCallback((set) => {
     setCurrentSetForInput(set);
     if (usesBarbell) {
       setShowCalculator(true);
     } else {
       setShowWeightInput(true);
     }
-  };
+  }, [usesBarbell]);
 
-  const openRepsSelector = (set) => {
+  const openRepsSelector = useCallback((set) => {
     setCurrentSetForInput(set);
     setShowRepsInput(true);
-  };
+  }, []);
 
-  const handleWeightInputChange = (newWeight) => {
+  const handleWeightInputChange = useCallback((newWeight) => {
     if (currentSetForInput) {
       handleWeightChange(currentSetForInput, newWeight);
     }
-  };
+  }, [currentSetForInput, handleWeightChange]);
 
-  const handleRepsInputChange = (newReps) => {
+  const handleRepsInputChange = useCallback((newReps) => {
     if (currentSetForInput) {
       handleRepsChange(currentSetForInput, newReps);
     }
-  };
+  }, [currentSetForInput, handleRepsChange]);
 
-  const closeInputs = () => {
+  const closeInputs = useCallback(() => {
     setShowCalculator(false);
     setShowWeightInput(false);
     setShowRepsInput(false);
     setCurrentSetForInput(null);
-  };
+  }, []);
 
   const addWarmupSet = () => {
     const warmupSets = sets.filter(s => s.is_warmup);
@@ -382,7 +382,7 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
   );
 }
 
-function SetRow({ set, exercise, onToggle, onWeightClick, onRepsClick }) {
+const SetRow = memo(({ set, exercise, onToggle, onWeightClick, onRepsClick }) => {
   return (
     <div className={`flex items-center gap-3 p-3 rounded-lg ${
       set.completed ? 'bg-green-900/30 border border-green-700' : 'bg-gray-700'
@@ -417,4 +417,12 @@ function SetRow({ set, exercise, onToggle, onWeightClick, onRepsClick }) {
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Only re-render if set data actually changed
+  return (
+    prevProps.set.id === nextProps.set.id &&
+    prevProps.set.completed === nextProps.set.completed &&
+    prevProps.set.weight === nextProps.set.weight &&
+    prevProps.set.reps === nextProps.set.reps
+  );
+});

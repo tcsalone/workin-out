@@ -42,3 +42,8 @@ CREATE INDEX IF NOT EXISTS idx_workouts_date ON workouts(date DESC);
 CREATE INDEX IF NOT EXISTS idx_workouts_type ON workouts(workout_type);
 CREATE INDEX IF NOT EXISTS idx_workout_sets_workout ON workout_sets(workout_id);
 CREATE INDEX IF NOT EXISTS idx_exercises_workout_type ON exercises(workout_type, display_order);
+
+-- Performance indexes for stats queries
+CREATE INDEX IF NOT EXISTS idx_workouts_completed_date ON workouts(completed_at, date DESC);
+CREATE INDEX IF NOT EXISTS idx_workout_sets_exercise_completed ON workout_sets(exercise_id, completed, weight DESC);
+CREATE INDEX IF NOT EXISTS idx_workout_sets_pr ON workout_sets(exercise_id, is_warmup, completed, weight DESC);

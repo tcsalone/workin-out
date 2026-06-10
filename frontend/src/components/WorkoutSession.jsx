@@ -112,8 +112,8 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
           exercise={currentExercise}
           workoutId={workoutId}
           onAddSet={(data) => addSet.mutate({ workoutId, data })}
-          onUpdateSet={(id, data) => updateSet.mutate({ id, data })}
-          onDeleteSet={(id) => deleteSet.mutate(id)}
+          onUpdateSet={(id, data, wId) => updateSet.mutate({ id, data, workoutId: wId || workoutId })}
+          onDeleteSet={(id) => deleteSet.mutate({ id, workoutId })}
           sets={workout?.sets?.filter(s => s.exercise_id === currentExercise.id) || []}
         />
       </div>
