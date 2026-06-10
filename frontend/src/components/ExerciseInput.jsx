@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLastWeight, usePR } from '../hooks/useExercises';
+import { useLastWeight, usePR, useLastSession } from '../hooks/useExercises';
 import PlateCalculator from './PlateCalculator';
 import WeightInput from './WeightInput';
 import RepsInput from './RepsInput';
@@ -7,9 +7,11 @@ import RepsInput from './RepsInput';
 export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateSet, onDeleteSet, sets }) {
   const { data: lastWeight } = useLastWeight(exercise.id);
   const { data: pr } = usePR(exercise.id);
+  const { data: lastSession } = useLastSession(exercise.id);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWeightInput, setShowWeightInput] = useState(false);
   const [showRepsInput, setShowRepsInput] = useState(false);
+  const [showPRCelebration, setShowPRCelebration] = useState(false);
   const [currentSetForInput, setCurrentSetForInput] = useState(null);
   const initializedExercisesRef = useRef(new Set());
 
@@ -27,11 +29,17 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
     // Batch all set creations together
     const setsToCreate = [];
 
+    // Use lastSession data if available, otherwise fall back to template defaults
+    const warmupCount = lastSession?.warmupSets?.length || exercise.default_warmup_sets;
+    const workingCount = lastSession?.workingSets?.length || exercise.default_working_sets;
+
     // Create warmup sets with progressive weight
-    for (let i = 0; i < exercise.default_warmup_sets; i++) {
+    for (let i = 0; i < warmupCount; i++) {
       const setNumber = i + 1;
+      const lastSessionSet = lastSession?.warmupSets?.[i];
+
       // First warmup = 50% of working weight, second = 75%
-      const warmupPercentage = exercise.default_warmup_sets === 1 ? 0.5 : (0.5 + (i * 0.25));
+      const warmupPercentage = warmupCount === 1 ? 0.5 : (0.5 + (i * 0.25));
       const warmupWeight = lastWeight?.weight
         ? Math.round(lastWeight.weight * warmupPercentage)
         : (usesBarbell ? exercise.bar_weight : 0);
@@ -40,20 +48,22 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
         exercise_id: exercise.id,
         set_number: setNumber,
         is_warmup: 1,
-        reps: exercise.default_reps,
+        reps: lastSessionSet?.reps || exercise.default_reps,
         weight: warmupWeight,
         completed: 0
       });
     }
 
     // Create working sets
-    for (let i = 0; i < exercise.default_working_sets; i++) {
-      const setNumber = exercise.default_warmup_sets + i + 1;
+    for (let i = 0; i < workingCount; i++) {
+      const setNumber = warmupCount + i + 1;
+      const lastSessionSet = lastSession?.workingSets?.[i];
+
       setsToCreate.push({
         exercise_id: exercise.id,
         set_number: setNumber,
         is_warmup: 0,
-        reps: exercise.default_reps,
+        reps: lastSessionSet?.reps || exercise.default_reps,
         weight: lastWeight?.weight || (usesBarbell ? exercise.bar_weight : 0),
         completed: 0
       });
@@ -64,6 +74,16 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
   }, [exercise.id]); // Re-run when exercise changes
 
   const handleToggleSet = (set) => {
+    // Check if this is a new PR (only for working sets being marked complete)
+    if (!set.completed && !set.is_warmup && set.weight) {
+      const currentPR = pr?.weight || 0;
+      if (set.weight > currentPR) {
+        // Trigger celebration!
+        setShowPRCelebration(true);
+        setTimeout(() => setShowPRCelebration(false), 3000); // 3 second celebration
+      }
+    }
+
     onUpdateSet(set.id, { completed: set.completed ? 0 : 1 });
   };
 
@@ -345,6 +365,18 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
           onChange={handleRepsInputChange}
           onClose={closeInputs}
         />
+      )}
+
+      {/* PR Celebration Animation */}
+      {showPRCelebration && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="animate-bounce-scale text-center">
+            <div className="text-9xl text-green-400 mb-4">✓</div>
+            <div className="text-4xl font-bold text-white animate-pulse">
+              NEW PR!
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

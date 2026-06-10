@@ -11,6 +11,7 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const deleteSet = useDeleteSet();
   const updateWorkout = useUpdateWorkout();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
   if (exercisesLoading || workoutLoading) {
     return (
@@ -58,14 +59,31 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
     }
   };
 
+  const handleQuitWorkout = () => {
+    setShowQuitConfirm(true);
+  };
+
+  const handleConfirmQuit = () => {
+    // Don't update completed_at - workout stays in-progress
+    onFinish();
+  };
+
+  const completedSetsCount = workout?.sets?.filter(s => s.completed).length || 0;
+
   return (
     <div className="min-h-screen bg-gray-900 pb-20">
       {/* Header */}
       <div className="sticky top-0 bg-gray-800 border-b border-gray-700 px-4 py-4 z-10">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <button
+            onClick={handleQuitWorkout}
+            className="text-gray-400 hover:text-white transition-colors text-sm font-semibold"
+          >
+            ← Home
+          </button>
           <h1 className="text-xl font-bold">Workout {workoutType}</h1>
           <div className="text-gray-400 text-sm">
-            Exercise {currentExerciseIndex + 1} of {exercises.length}
+            {currentExerciseIndex + 1}/{exercises.length}
           </div>
         </div>
       </div>
@@ -119,6 +137,38 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
           </button>
         </div>
       </div>
+
+      {/* Quit Confirmation Modal */}
+      {showQuitConfirm && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-bold mb-4">Exit workout without finishing?</h3>
+
+            <p className="text-gray-300 mb-2">
+              You've completed {completedSetsCount} set{completedSetsCount !== 1 ? 's' : ''} so far.
+            </p>
+
+            <p className="text-gray-400 text-sm mb-6">
+              Your progress will be saved, but the workout won't be marked as complete.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowQuitConfirm(false)}
+                className="flex-1 btn bg-gray-700 hover:bg-gray-600"
+              >
+                Keep Working
+              </button>
+              <button
+                onClick={handleConfirmQuit}
+                className="flex-1 btn bg-red-600 hover:bg-red-700"
+              >
+                Exit Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

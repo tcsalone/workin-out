@@ -20,6 +20,16 @@ export default {
           900: '#0c4a6e',
         },
       },
+      animation: {
+        'bounce-scale': 'bounceScale 0.6s ease-out',
+      },
+      keyframes: {
+        bounceScale: {
+          '0%': { transform: 'scale(0)', opacity: '0' },
+          '50%': { transform: 'scale(1.2)', opacity: '1' },
+          '100%': { transform: 'scale(1)', opacity: '1' }
+        }
+      }
     },
   },
   plugins: [],

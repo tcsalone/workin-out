@@ -41,3 +41,15 @@ export function usePR(exerciseId) {
     staleTime: 60000, // 1 minute
   });
 }
+
+export function useLastSession(exerciseId) {
+  return useQuery({
+    queryKey: ['stats', 'last-session', exerciseId],
+    queryFn: async () => {
+      const data = await api.getLastSession(exerciseId);
+      return data.session;
+    },
+    enabled: !!exerciseId,
+    staleTime: 60000, // 1 minute
+  });
+}

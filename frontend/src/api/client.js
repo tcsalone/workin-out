@@ -88,6 +88,9 @@ export const api = {
   getLastCompleted: () =>
     fetchJSON('/stats/last-completed'),
 
+  getLastSession: (exerciseId) =>
+    fetchJSON(`/stats/last-session/${exerciseId}`),
+
   // Reset
   resetAllData: () =>
     fetchJSON('/workouts/reset/all', { method: 'DELETE' }),

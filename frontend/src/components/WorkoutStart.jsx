@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useNextWorkout } from '../hooks/useExercises';
 import { useCreateWorkout, useLastCompleted } from '../hooks/useWorkouts';
 
@@ -5,6 +6,27 @@ export default function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSe
   const { data: nextWorkout, isLoading } = useNextWorkout();
   const { data: lastCompleted } = useLastCompleted();
   const createWorkout = useCreateWorkout();
+
+  // Calculate days since last workout
+  const daysSinceLastWorkout = useMemo(() => {
+    if (!lastCompleted?.workoutA && !lastCompleted?.workoutB) return null;
+
+    const lastA = lastCompleted.workoutA?.completedAt
+      ? new Date(lastCompleted.workoutA.completedAt)
+      : null;
+    const lastB = lastCompleted.workoutB?.completedAt
+      ? new Date(lastCompleted.workoutB.completedAt)
+      : null;
+
+    const mostRecent = [lastA, lastB]
+      .filter(Boolean)
+      .sort((a, b) => b - a)[0];
+
+    if (!mostRecent) return null;
+
+    const daysDiff = Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24));
+    return daysDiff;
+  }, [lastCompleted]);
 
   const formatLastCompleted = (completedData) => {
     if (!completedData || !completedData.completedAt) return 'Never completed';
@@ -55,6 +77,23 @@ export default function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSe
 
         <h1 className="text-4xl font-bold text-center mb-2">Workin Out</h1>
         <p className="text-gray-400 text-center mb-12">Ready to lift?</p>
+
+        {/* Workout Reminder Banner */}
+        {daysSinceLastWorkout !== null && daysSinceLastWorkout >= 3 && (
+          <div className="mb-8 p-4 bg-orange-900/30 border border-orange-700 rounded-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">💪</span>
+              <div>
+                <p className="text-orange-400 font-semibold">
+                  It's been {daysSinceLastWorkout} days since your last workout!
+                </p>
+                <p className="text-sm text-gray-400">
+                  Time to get back in the gym 🔥
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>
