@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useExercises } from '../hooks/useExercises';
 import { useWorkout, useAddSet, useUpdateSet, useDeleteSet, useUpdateWorkout } from '../hooks/useWorkouts';
+import { api } from '../api/client';
 import ExerciseInput from './ExerciseInput';
 
 export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
+  const queryClient = useQueryClient();
   const { data: exercises, isLoading: exercisesLoading } = useExercises(workoutType);
   const { data: workout, isLoading: workoutLoading } = useWorkout(workoutId);
   const addSet = useAddSet();
@@ -30,7 +33,35 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   }
 
   const currentExercise = exercises[currentExerciseIndex];
+  const nextExercise = exercises[currentExerciseIndex + 1];
   const isLastExercise = currentExerciseIndex === exercises.length - 1;
+
+  // Prefetch data for the next exercise to eliminate loading delay
+  useEffect(() => {
+    if (!nextExercise) return; // No next exercise to prefetch
+
+    // Prefetch all 3 queries that ExerciseInput needs
+    queryClient.prefetchQuery({
+      queryKey: ['stats', 'last-weight', nextExercise.id],
+      queryFn: () => api.getLastWeight(nextExercise.id),
+    });
+
+    queryClient.prefetchQuery({
+      queryKey: ['stats', 'pr', nextExercise.id],
+      queryFn: async () => {
+        const data = await api.getPR(nextExercise.id);
+        return data.pr;
+      },
+    });
+
+    queryClient.prefetchQuery({
+      queryKey: ['stats', 'last-session', nextExercise.id],
+      queryFn: async () => {
+        const data = await api.getLastSession(nextExercise.id);
+        return data.session;
+      },
+    });
+  }, [currentExerciseIndex, nextExercise, queryClient]);
 
   const handleNextExercise = () => {
     if (isLastExercise) {
