@@ -237,4 +237,29 @@ router.delete('/sets/:id', (req, res) => {
   }
 });
 
+// Reset all data (workouts and sets)
+router.delete('/reset/all', async (req, res) => {
+  try {
+    await db.runAsync('DELETE FROM workout_sets');
+    await db.runAsync('DELETE FROM workouts');
+    // Reset sqlite_sequence for auto-increment IDs
+    await db.runAsync("DELETE FROM sqlite_sequence WHERE name IN ('workouts', 'workout_sets')");
+    res.json({ message: 'All workout data reset successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Clear workout history (same as reset/all for now since exercises are separate)
+router.delete('/reset/history', async (req, res) => {
+  try {
+    await db.runAsync('DELETE FROM workout_sets');
+    await db.runAsync('DELETE FROM workouts');
+    await db.runAsync("DELETE FROM sqlite_sequence WHERE name IN ('workouts', 'workout_sets')");
+    res.json({ message: 'Workout history cleared successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

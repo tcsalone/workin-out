@@ -29,3 +29,15 @@ export function useHistory(limit = 10) {
     queryFn: () => api.getHistory(limit),
   });
 }
+
+export function usePR(exerciseId) {
+  return useQuery({
+    queryKey: ['stats', 'pr', exerciseId],
+    queryFn: async () => {
+      const data = await api.getPR(exerciseId);
+      return data.pr;
+    },
+    enabled: !!exerciseId,
+    staleTime: 60000, // 1 minute
+  });
+}

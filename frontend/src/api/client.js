@@ -81,4 +81,17 @@ export const api = {
 
   getProgress: (exerciseId, limit = 10) =>
     fetchJSON(`/stats/progress/${exerciseId}?limit=${limit}`),
+
+  getPR: (exerciseId) =>
+    fetchJSON(`/stats/pr/${exerciseId}`),
+
+  getLastCompleted: () =>
+    fetchJSON('/stats/last-completed'),
+
+  // Reset
+  resetAllData: () =>
+    fetchJSON('/workouts/reset/all', { method: 'DELETE' }),
+
+  resetHistory: () =>
+    fetchJSON('/workouts/reset/history', { method: 'DELETE' }),
 };

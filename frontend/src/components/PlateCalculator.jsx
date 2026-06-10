@@ -2,6 +2,26 @@ import { useState } from 'react';
 
 const PLATE_SIZES = [45, 35, 25, 10, 5, 2.5];
 
+// Get color styling for each plate weight (IWF standard colors)
+const getPlateColor = (weight) => {
+  switch (weight) {
+    case 45:
+      return 'bg-blue-600 hover:bg-blue-700 border-blue-800 text-white';
+    case 35:
+      return 'bg-yellow-500 hover:bg-yellow-600 border-yellow-700 text-gray-900';
+    case 25:
+      return 'bg-green-600 hover:bg-green-700 border-green-800 text-white';
+    case 10:
+      return 'bg-white hover:bg-gray-100 border-gray-400 text-gray-900';
+    case 5:
+      return 'bg-gray-500 hover:bg-gray-600 border-gray-700 text-white';
+    case 2.5:
+      return 'bg-red-600 hover:bg-red-700 border-red-800 text-white';
+    default:
+      return 'bg-gray-600 hover:bg-gray-700 border-gray-800 text-white';
+  }
+};
+
 export default function PlateCalculator({ barWeight = 45, value, onChange, onClose }) {
   const [plates, setPlates] = useState(() => {
     // Calculate initial plates from current weight
@@ -62,24 +82,30 @@ export default function PlateCalculator({ barWeight = 45, value, onChange, onClo
 
         <div className="mb-6">
           <div className="text-gray-400 text-sm mb-2">Each side:</div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-3">
             {PLATE_SIZES.map(size => (
-              <div key={size} className="flex flex-col items-center">
+              <div key={size} className="flex flex-col items-center gap-2">
                 <button
                   onClick={() => addPlate(size)}
-                  className="w-full btn btn-secondary mb-2"
+                  className={`relative w-full h-20 rounded-full border-4 font-bold text-lg transition-all shadow-lg ${getPlateColor(size)}`}
+                  style={{
+                    boxShadow: 'inset 0 0 0 8px currentColor, inset 0 2px 8px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.4)'
+                  }}
                 >
-                  {size} lb
+                  <div className="relative z-10">{size}</div>
+                  <div className="absolute inset-0 rounded-full border-8 border-transparent" style={{
+                    background: 'radial-gradient(circle at center, transparent 25%, currentColor 25%, currentColor 30%, transparent 30%)'
+                  }}></div>
                 </button>
                 {plates[size] > 0 && (
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => removePlate(size)}
-                      className="w-8 h-8 rounded bg-red-600 hover:bg-red-700 text-white"
+                      className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold shadow"
                     >
                       −
                     </button>
-                    <span className="text-lg font-semibold w-6 text-center">
+                    <span className="text-lg font-bold w-8 text-center text-white">
                       {plates[size]}
                     </span>
                   </div>

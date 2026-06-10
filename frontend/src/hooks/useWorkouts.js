@@ -72,3 +72,33 @@ export function useDeleteSet() {
     },
   });
 }
+
+export function useLastCompleted() {
+  return useQuery({
+    queryKey: ['stats', 'last-completed'],
+    queryFn: api.getLastCompleted,
+    staleTime: 30000, // 30 seconds
+  });
+}
+
+export function useResetAllData() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: api.resetAllData,
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useResetHistory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: api.resetHistory,
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    },
+  });
+}

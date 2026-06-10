@@ -105,4 +105,75 @@ router.get('/progress/:exercise_id', async (req, res) => {
   }
 });
 
+// Get PR (personal record) for an exercise
+router.get('/pr/:exercise_id', async (req, res) => {
+  try {
+    const { exercise_id } = req.params;
+
+    // Query for max weight from working sets (is_warmup = 0) for this exercise
+    const pr = await db.getAsync(`
+      SELECT
+        ws.weight as pr_weight,
+        ws.reps as pr_reps,
+        w.date as pr_date,
+        w.completed_at as pr_time
+      FROM workout_sets ws
+      JOIN workouts w ON ws.workout_id = w.id
+      WHERE ws.exercise_id = ?
+        AND ws.is_warmup = 0
+        AND ws.completed = 1
+        AND ws.weight IS NOT NULL
+      ORDER BY ws.weight DESC, w.date DESC
+      LIMIT 1
+    `, exercise_id);
+
+    if (!pr || !pr.pr_weight) {
+      return res.json({ pr: null });
+    }
+
+    res.json({
+      pr: {
+        weight: pr.pr_weight,
+        reps: pr.pr_reps,
+        date: pr.pr_date,
+        time: pr.pr_time
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get last completed workout dates for Workout A and B
+router.get('/last-completed', async (req, res) => {
+  try {
+    // Get last completed workout for type A
+    const lastA = await db.getAsync(`
+      SELECT date, completed_at
+      FROM workouts
+      WHERE workout_type = 'A'
+        AND completed_at IS NOT NULL
+      ORDER BY date DESC, completed_at DESC
+      LIMIT 1
+    `);
+
+    // Get last completed workout for type B
+    const lastB = await db.getAsync(`
+      SELECT date, completed_at
+      FROM workouts
+      WHERE workout_type = 'B'
+        AND completed_at IS NOT NULL
+      ORDER BY date DESC, completed_at DESC
+      LIMIT 1
+    `);
+
+    res.json({
+      workoutA: lastA ? { date: lastA.date, completedAt: lastA.completed_at } : null,
+      workoutB: lastB ? { date: lastB.date, completedAt: lastB.completed_at } : null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLastWeight } from '../hooks/useExercises';
+import { useLastWeight, usePR } from '../hooks/useExercises';
 import PlateCalculator from './PlateCalculator';
 import WeightInput from './WeightInput';
+import RepsInput from './RepsInput';
 
 export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateSet, onDeleteSet, sets }) {
   const { data: lastWeight } = useLastWeight(exercise.id);
+  const { data: pr } = usePR(exercise.id);
   const [showCalculator, setShowCalculator] = useState(false);
   const [showWeightInput, setShowWeightInput] = useState(false);
+  const [showRepsInput, setShowRepsInput] = useState(false);
   const [currentSetForInput, setCurrentSetForInput] = useState(null);
   const initializedExercisesRef = useRef(new Set());
 
@@ -68,6 +71,10 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
     onUpdateSet(set.id, { weight: newWeight });
   };
 
+  const handleRepsChange = (set, newReps) => {
+    onUpdateSet(set.id, { reps: newReps });
+  };
+
   const openWeightSelector = (set) => {
     setCurrentSetForInput(set);
     if (usesBarbell) {
@@ -77,15 +84,27 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
     }
   };
 
+  const openRepsSelector = (set) => {
+    setCurrentSetForInput(set);
+    setShowRepsInput(true);
+  };
+
   const handleWeightInputChange = (newWeight) => {
     if (currentSetForInput) {
       handleWeightChange(currentSetForInput, newWeight);
     }
   };
 
+  const handleRepsInputChange = (newReps) => {
+    if (currentSetForInput) {
+      handleRepsChange(currentSetForInput, newReps);
+    }
+  };
+
   const closeInputs = () => {
     setShowCalculator(false);
     setShowWeightInput(false);
+    setShowRepsInput(false);
     setCurrentSetForInput(null);
   };
 
@@ -198,9 +217,28 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
   const warmupSets = sets.filter(s => s.is_warmup).sort((a, b) => a.set_number - b.set_number);
   const workingSets = sets.filter(s => !s.is_warmup).sort((a, b) => a.set_number - b.set_number);
 
+  // Format date for PR display
+  const formatPRDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   return (
     <div className="card">
-      <h2 className="text-2xl font-bold mb-2">{exercise.name}</h2>
+      <div className="flex items-start justify-between mb-2">
+        <h2 className="text-2xl font-bold">{exercise.name}</h2>
+        {pr && (
+          <div className="text-right">
+            <div className="text-sm font-semibold text-green-400">
+              PR: {pr.weight} lbs
+            </div>
+            <div className="text-xs text-gray-500">
+              {formatPRDate(pr.date)}
+            </div>
+          </div>
+        )}
+      </div>
 
       {lastWeight?.weight && (
         <p className="text-gray-400 mb-6">
@@ -240,6 +278,7 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
                 exercise={exercise}
                 onToggle={() => handleToggleSet(set)}
                 onWeightClick={() => openWeightSelector(set)}
+                onRepsClick={() => openRepsSelector(set)}
               />
             ))}
           </div>
@@ -277,6 +316,7 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
               exercise={exercise}
               onToggle={() => handleToggleSet(set)}
               onWeightClick={() => openWeightSelector(set)}
+              onRepsClick={() => openRepsSelector(set)}
             />
           ))}
         </div>
@@ -298,11 +338,19 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
           onClose={closeInputs}
         />
       )}
+
+      {showRepsInput && (
+        <RepsInput
+          value={currentSetForInput?.reps || exercise.default_reps}
+          onChange={handleRepsInputChange}
+          onClose={closeInputs}
+        />
+      )}
     </div>
   );
 }
 
-function SetRow({ set, exercise, onToggle, onWeightClick }) {
+function SetRow({ set, exercise, onToggle, onWeightClick, onRepsClick }) {
   return (
     <div className={`flex items-center gap-3 p-3 rounded-lg ${
       set.completed ? 'bg-green-900/30 border border-green-700' : 'bg-gray-700'
@@ -318,13 +366,23 @@ function SetRow({ set, exercise, onToggle, onWeightClick }) {
         {set.completed ? '✓' : set.set_number}
       </button>
 
-      <button
-        onClick={onWeightClick}
-        className="flex-1 text-left py-3 px-4 bg-gray-800 rounded-lg"
-      >
-        <div className="text-2xl font-bold">{set.weight || 0} lbs</div>
-        <div className="text-sm text-gray-400">{set.reps || exercise.default_reps} reps</div>
-      </button>
+      <div className="flex-1 flex gap-2">
+        <button
+          onClick={onWeightClick}
+          className="flex-1 text-left py-3 px-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors"
+        >
+          <div className="text-2xl font-bold">{set.weight || 0} lbs</div>
+          <div className="text-xs text-gray-500">tap to edit</div>
+        </button>
+
+        <button
+          onClick={onRepsClick}
+          className="w-20 py-3 px-2 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors text-center"
+        >
+          <div className="text-2xl font-bold">{set.reps || exercise.default_reps}</div>
+          <div className="text-xs text-gray-500">reps</div>
+        </button>
+      </div>
     </div>
   );
 }
