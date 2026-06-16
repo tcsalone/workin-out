@@ -10,40 +10,70 @@ function App() {
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const { data: lastCompleted } = useLastCompleted();
 
+  // Helper to safely check Notification support
+  const isNotificationSupported = () => {
+    return 'Notification' in window && typeof Notification !== 'undefined';
+  };
+
   // Request notification permission on mount
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    try {
+      if (isNotificationSupported() && Notification.permission === 'default') {
+        Notification.requestPermission().catch(err => {
+          console.warn('Error requesting notification permission:', err);
+        });
+      }
+    } catch (error) {
+      console.warn('Notification permission request is not supported or failed:', error);
     }
   }, []);
 
   // Periodic check for workout reminders (hourly when app is open)
   useEffect(() => {
-    const checkAndNotify = () => {
-      if (!lastCompleted?.workoutA && !lastCompleted?.workoutB) return;
+    const checkAndNotify = async () => {
+      try {
+        if (!isNotificationSupported()) return;
+        if (Notification.permission !== 'granted') return;
+        if (!lastCompleted?.workoutA && !lastCompleted?.workoutB) return;
 
-      const lastA = lastCompleted.workoutA?.completedAt
-        ? new Date(lastCompleted.workoutA.completedAt)
-        : null;
-      const lastB = lastCompleted.workoutB?.completedAt
-        ? new Date(lastCompleted.workoutB.completedAt)
-        : null;
+        const lastA = lastCompleted.workoutA?.completedAt
+          ? new Date(lastCompleted.workoutA.completedAt)
+          : null;
+        const lastB = lastCompleted.workoutB?.completedAt
+          ? new Date(lastCompleted.workoutB.completedAt)
+          : null;
 
-      const mostRecent = [lastA, lastB]
-        .filter(Boolean)
-        .sort((a, b) => b - a)[0];
+        const mostRecent = [lastA, lastB]
+          .filter(Boolean)
+          .sort((a, b) => b - a)[0];
 
-      if (!mostRecent) return;
+        if (!mostRecent) return;
 
-      const daysDiff = Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.floor((Date.now() - mostRecent.getTime()) / (1000 * 60 * 60 * 24));
 
-      if (daysDiff >= 3 && Notification.permission === 'granted') {
-        new Notification('Time to Workout! 💪', {
-          body: `It's been ${daysDiff} days since your last session. Let's get back to it!`,
-          icon: '/icon-192.png',
-          tag: 'workout-reminder', // Prevents duplicate notifications
-          requireInteraction: false
-        });
+        if (daysDiff >= 3) {
+          const title = 'Time to Workout! 💪';
+          const options = {
+            body: `It's been ${daysDiff} days since your last session. Let's get back to it!`,
+            icon: '/icon-192.png',
+            tag: 'workout-reminder', // Prevents duplicate notifications
+            requireInteraction: false
+          };
+
+          // Try showing via service worker registration first (best for mobile/PWA)
+          if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (registration && 'showNotification' in registration) {
+              await registration.showNotification(title, options);
+              return;
+            }
+          }
+
+          // Fallback to standard constructor
+          new Notification(title, options);
+        }
+      } catch (error) {
+        console.warn('Failed to process or show notification safely:', error);
       }
     };
 
