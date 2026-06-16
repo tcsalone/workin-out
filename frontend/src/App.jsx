@@ -4,6 +4,7 @@ import WorkoutStart from './components/WorkoutStart';
 import WorkoutSession from './components/WorkoutSession';
 import WorkoutHistory from './components/WorkoutHistory';
 import Settings from './components/Settings';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   const [currentView, setCurrentView] = useState('start'); // 'start', 'workout', 'history', 'settings'
@@ -113,31 +114,33 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      {currentView === 'start' && (
-        <WorkoutStart
-          onWorkoutStarted={handleWorkoutStarted}
-          onViewHistory={handleViewHistory}
-          onViewSettings={handleViewSettings}
-        />
-      )}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-900">
+        {currentView === 'start' && (
+          <WorkoutStart
+            onWorkoutStarted={handleWorkoutStarted}
+            onViewHistory={handleViewHistory}
+            onViewSettings={handleViewSettings}
+          />
+        )}
 
-      {currentView === 'workout' && currentWorkout && (
-        <WorkoutSession
-          workoutId={currentWorkout.id}
-          workoutType={currentWorkout.type}
-          onFinish={handleWorkoutFinished}
-        />
-      )}
+        {currentView === 'workout' && currentWorkout && (
+          <WorkoutSession
+            workoutId={currentWorkout.id}
+            workoutType={currentWorkout.type}
+            onFinish={handleWorkoutFinished}
+          />
+        )}
 
-      {currentView === 'history' && (
-        <WorkoutHistory onClose={handleCloseHistory} />
-      )}
+        {currentView === 'history' && (
+          <WorkoutHistory onClose={handleCloseHistory} />
+        )}
 
-      {currentView === 'settings' && (
-        <Settings onClose={handleCloseSettings} />
-      )}
-    </div>
+        {currentView === 'settings' && (
+          <Settings onClose={handleCloseSettings} />
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
 
