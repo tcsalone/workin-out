@@ -99,7 +99,7 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
     onFinish();
   };
 
-  const completedSetsCount = workout?.sets?.filter(s => s.completed).length || 0;
+  const completedSetsCount = workout?.sets?.filter(s => s.completed)?.length || 0;
 
   return (
     <div className="min-h-screen bg-gray-900 pb-20">
