@@ -18,13 +18,14 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
-  console.log('[WorkoutSession] State', {
-    exercisesLoading,
-    workoutLoading,
-    exercisesCount: exercises?.length,
-    workoutSetsCount: workout?.sets?.length,
-    currentExerciseIndex
-  });
+  // Log actual values, not objects
+  console.log('[WorkoutSession] State:',
+    'exercisesLoading:', exercisesLoading,
+    'workoutLoading:', workoutLoading,
+    'exercisesCount:', exercises?.length,
+    'workoutSetsCount:', workout?.sets?.length,
+    'currentExerciseIndex:', currentExerciseIndex
+  );
 
   // Memoize callbacks to prevent infinite loops in ExerciseInput useEffect
   const handleAddSet = useCallback((data) => {
@@ -60,10 +61,9 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const nextExercise = exercises[currentExerciseIndex + 1];
   const isLastExercise = currentExerciseIndex === exercises.length - 1;
 
-  // Memoize filtered sets to prevent new array reference on each render
-  const currentExerciseSets = useMemo(() => {
-    return workout?.sets?.filter(s => s.exercise_id === currentExercise.id) || [];
-  }, [workout?.sets, currentExercise.id]);
+  // Don't memoize - just compute directly. The parent memoized callbacks are enough.
+  // Memoizing with workout?.sets causes infinite loops because React Query returns new array refs
+  const currentExerciseSets = workout?.sets?.filter(s => s.exercise_id === currentExercise?.id) || [];
 
   // Prefetch data for the next exercise to eliminate loading delay
   useEffect(() => {
