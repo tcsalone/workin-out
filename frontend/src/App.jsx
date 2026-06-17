@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLastCompleted } from './hooks/useWorkouts';
 import WorkoutStart from './components/WorkoutStart';
 import WorkoutSession from './components/WorkoutSession';
@@ -11,10 +11,10 @@ function App() {
   const [currentWorkout, setCurrentWorkout] = useState(null);
   const { data: lastCompleted } = useLastCompleted();
 
-  // Helper to safely check Notification support
-  const isNotificationSupported = () => {
+  // Helper to safely check Notification support - memoized to prevent recreating on each render
+  const isNotificationSupported = useCallback(() => {
     return 'Notification' in window && typeof Notification !== 'undefined';
-  };
+  }, []);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -85,7 +85,7 @@ function App() {
     const checkInterval = setInterval(checkAndNotify, 60 * 60 * 1000);
 
     return () => clearInterval(checkInterval);
-  }, [lastCompleted]);
+  }, [lastCompleted, isNotificationSupported]);
 
   const handleWorkoutStarted = (workoutId, workoutType) => {
     setCurrentWorkout({ id: workoutId, type: workoutType });
