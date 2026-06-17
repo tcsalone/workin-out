@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { useNextWorkout } from '../hooks/useExercises';
 import { useCreateWorkout, useLastCompleted } from '../hooks/useWorkouts';
 
-export default function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSettings }) {
+function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSettings }) {
   const { data: nextWorkout, isLoading } = useNextWorkout();
   const { data: lastCompleted } = useLastCompleted();
   const createWorkout = useCreateWorkout();
@@ -145,3 +145,5 @@ export default function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSe
     </div>
   );
 }
+
+export default memo(WorkoutStart);

@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useLastCompleted } from './hooks/useWorkouts';
 import WorkoutStart from './components/WorkoutStart';
 import WorkoutSession from './components/WorkoutSession';
-import WorkoutHistory from './components/WorkoutHistory';
-import Settings from './components/Settings';
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Lazy load components that aren't needed immediately
+const WorkoutHistory = lazy(() => import('./components/WorkoutHistory'));
+const Settings = lazy(() => import('./components/Settings'));
 
 function App() {
   const [currentView, setCurrentView] = useState('start'); // 'start', 'workout', 'history', 'settings'
@@ -133,11 +135,23 @@ function App() {
         )}
 
         {currentView === 'history' && (
-          <WorkoutHistory onClose={handleCloseHistory} />
+          <Suspense fallback={
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+              <div className="text-gray-400">Loading...</div>
+            </div>
+          }>
+            <WorkoutHistory onClose={handleCloseHistory} />
+          </Suspense>
         )}
 
         {currentView === 'settings' && (
-          <Settings onClose={handleCloseSettings} />
+          <Suspense fallback={
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+              <div className="text-gray-400">Loading...</div>
+            </div>
+          }>
+            <Settings onClose={handleCloseSettings} />
+          </Suspense>
         )}
       </div>
     </ErrorBoundary>

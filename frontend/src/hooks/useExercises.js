@@ -5,6 +5,7 @@ export function useExercises(workoutType) {
   return useQuery({
     queryKey: ['exercises', workoutType],
     queryFn: () => api.getExercises(workoutType),
+    staleTime: Infinity, // Exercise templates never change
   });
 }
 
@@ -38,7 +39,7 @@ export function usePR(exerciseId) {
       return data.pr;
     },
     enabled: !!exerciseId,
-    staleTime: 60000, // 1 minute
+    staleTime: 1000 * 60 * 30, // 30 minutes - PRs change rarely
   });
 }
 
@@ -50,6 +51,6 @@ export function useLastSession(exerciseId) {
       return data.session;
     },
     enabled: !!exerciseId,
-    staleTime: 60000, // 1 minute
+    staleTime: 1000 * 60 * 10, // 10 minutes - last session changes rarely
   });
 }
