@@ -71,7 +71,19 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
 
     // Add all sets at once
     setsToCreate.forEach(set => onAddSet(set));
-  }, [exercise.id]); // Re-run when exercise changes
+  }, [
+    exercise.id,
+    exercise.default_warmup_sets,
+    exercise.default_working_sets,
+    exercise.default_reps,
+    exercise.bar_weight,
+    isWeightTracked,
+    sets.length,
+    lastWeight,
+    lastSession,
+    usesBarbell,
+    onAddSet
+  ]);
 
   const handleToggleSet = useCallback((set) => {
     // Check if this is a new PR (only for working sets being marked complete)
