@@ -6,6 +6,8 @@ import { api } from '../api/client';
 import ExerciseInput from './ExerciseInput';
 
 export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
+  console.log('[WorkoutSession] Rendering', { workoutId, workoutType });
+
   const queryClient = useQueryClient();
   const { data: exercises, isLoading: exercisesLoading } = useExercises(workoutType);
   const { data: workout, isLoading: workoutLoading } = useWorkout(workoutId);
@@ -16,6 +18,14 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const updateWorkout = useUpdateWorkout();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+
+  console.log('[WorkoutSession] State', {
+    exercisesLoading,
+    workoutLoading,
+    exercisesCount: exercises?.length,
+    workoutSetsCount: workout?.sets?.length,
+    currentExerciseIndex
+  });
 
   // Memoize callbacks to prevent infinite loops in ExerciseInput useEffect
   const handleAddSet = useCallback((data) => {

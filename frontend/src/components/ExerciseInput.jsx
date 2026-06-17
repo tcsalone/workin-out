@@ -26,10 +26,21 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
 
   // Initialize sets if needed - track by exercise ID to prevent duplicate calls per exercise
   useEffect(() => {
+    console.log('[ExerciseInput] useEffect triggered', {
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      isWeightTracked,
+      setsLength: sets.length,
+      alreadyInitialized: initializedExercisesRef.current.has(exercise.id),
+      willCreateSets: isWeightTracked && sets.length === 0 && !initializedExercisesRef.current.has(exercise.id)
+    });
+
     if (!isWeightTracked || sets.length > 0 || initializedExercisesRef.current.has(exercise.id)) {
+      console.log('[ExerciseInput] Early return - not creating sets');
       return;
     }
 
+    console.log('[ExerciseInput] Marking exercise as initialized:', exercise.id);
     initializedExercisesRef.current.add(exercise.id);
 
     // Batch all set creations together
@@ -76,8 +87,15 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
     }
 
     // Add all sets at once using batch endpoint (single API call, single invalidation)
+    console.log('[ExerciseInput] Calling onAddSetsBatch with', setsToCreate.length, 'sets:', setsToCreate);
+
     // Use ref to avoid dependency on onAddSetsBatch which may change
-    onAddSetsBatchRef.current(setsToCreate);
+    try {
+      onAddSetsBatchRef.current(setsToCreate);
+      console.log('[ExerciseInput] onAddSetsBatch called successfully');
+    } catch (error) {
+      console.error('[ExerciseInput] Error calling onAddSetsBatch:', error);
+    }
   }, [exercise.id]); // Re-run when exercise changes
 
   const handleToggleSet = useCallback((set) => {

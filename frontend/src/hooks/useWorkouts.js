@@ -55,9 +55,23 @@ export function useAddSetsBatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ workoutId, sets }) => api.addSetsBatch(workoutId, sets),
-    onSuccess: (_, { workoutId }) => {
+    mutationFn: async ({ workoutId, sets }) => {
+      console.log('[useAddSetsBatch] Mutation starting', { workoutId, setsCount: sets.length });
+      try {
+        const result = await api.addSetsBatch(workoutId, sets);
+        console.log('[useAddSetsBatch] Mutation succeeded', { result });
+        return result;
+      } catch (error) {
+        console.error('[useAddSetsBatch] Mutation failed', { error, workoutId, sets });
+        throw error;
+      }
+    },
+    onSuccess: (data, { workoutId }) => {
+      console.log('[useAddSetsBatch] onSuccess - invalidating workout query', { workoutId });
       queryClient.invalidateQueries({ queryKey: ['workout', workoutId] });
+    },
+    onError: (error, variables) => {
+      console.error('[useAddSetsBatch] onError callback', { error, variables });
     },
   });
 }
