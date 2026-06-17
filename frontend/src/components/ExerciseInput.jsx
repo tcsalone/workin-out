@@ -14,28 +14,16 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
   const [showPRCelebration, setShowPRCelebration] = useState(false);
   const [currentSetForInput, setCurrentSetForInput] = useState(null);
   const initializedExercisesRef = useRef(new Set());
-  const onAddSetRef = useRef(onAddSet);
 
   const isWeightTracked = exercise.is_weight_tracked;
   const usesBarbell = exercise.bar_weight > 0;
 
-  // Keep ref updated with latest onAddSet
+  // Initialize sets if needed - track by exercise ID to prevent duplicate calls per exercise
   useEffect(() => {
-    onAddSetRef.current = onAddSet;
-  }, [onAddSet]);
+    if (!isWeightTracked || sets.length > 0 || initializedExercisesRef.current.has(exercise.id)) {
+      return;
+    }
 
-  // Initialize sets if needed - run once per exercise after data loads
-  useEffect(() => {
-    // Skip if not weight-tracked exercise
-    if (!isWeightTracked) return;
-
-    // Skip if already initialized for this exercise
-    if (initializedExercisesRef.current.has(exercise.id)) return;
-
-    // Skip if sets already exist
-    if (sets.length > 0) return;
-
-    // Mark as initialized immediately to prevent duplicate runs
     initializedExercisesRef.current.add(exercise.id);
 
     // Batch all set creations together
@@ -81,11 +69,9 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
       });
     }
 
-    // Add all sets at once using the ref to avoid dependency issues
-    setsToCreate.forEach(set => onAddSetRef.current(set));
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exercise.id]); // Only run when exercise changes - ref prevents duplicates
+    // Add all sets at once
+    setsToCreate.forEach(set => onAddSet(set));
+  }, [exercise.id]); // Re-run when exercise changes
 
   const handleToggleSet = useCallback((set) => {
     // Check if this is a new PR (only for working sets being marked complete)
