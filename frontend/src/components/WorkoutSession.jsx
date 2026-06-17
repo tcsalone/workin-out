@@ -61,7 +61,7 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
         return data.session;
       },
     });
-  }, [currentExerciseIndex, nextExercise, queryClient]);
+  }, [currentExerciseIndex, nextExercise?.id, queryClient]);
 
   const handleNextExercise = () => {
     if (isLastExercise) {
