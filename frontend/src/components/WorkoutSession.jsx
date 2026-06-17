@@ -16,25 +16,9 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
-  if (exercisesLoading || workoutLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-400">Loading workout...</div>
-      </div>
-    );
-  }
-
-  if (!exercises || exercises.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-400">No exercises found for Workout {workoutType}</div>
-      </div>
-    );
-  }
-
-  const currentExercise = exercises[currentExerciseIndex];
-  const nextExercise = exercises[currentExerciseIndex + 1];
-  const isLastExercise = currentExerciseIndex === exercises.length - 1;
+  const currentExercise = exercises?.[currentExerciseIndex];
+  const nextExercise = exercises?.[currentExerciseIndex + 1];
+  const isLastExercise = currentExerciseIndex === (exercises?.length || 0) - 1;
 
   // Prefetch data for the next exercise to eliminate loading delay
   useEffect(() => {
@@ -62,6 +46,22 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
       },
     });
   }, [currentExerciseIndex, nextExercise?.id, queryClient]);
+
+  if (exercisesLoading || workoutLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-400">Loading workout...</div>
+      </div>
+    );
+  }
+
+  if (!exercises || exercises.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-400">No exercises found for Workout {workoutType}</div>
+      </div>
+    );
+  }
 
   const handleNextExercise = () => {
     if (isLastExercise) {
