@@ -141,71 +141,7 @@ router.delete('/:id', (req, res) => {
   }
 });
 
-// Add multiple sets at once (batch operation)
-// IMPORTANT: This route MUST come before /:workout_id/sets to match /batch correctly
-router.post('/:workout_id/sets/batch', async (req, res) => {
-  console.log('[BATCH] POST /:workout_id/sets/batch called', {
-    workout_id: req.params.workout_id,
-    setsCount: req.body?.sets?.length,
-    bodyKeys: Object.keys(req.body || {})
-  });
-
-  try {
-    const { workout_id } = req.params;
-    const { sets } = req.body;
-
-    if (!Array.isArray(sets) || sets.length === 0) {
-      console.error('[BATCH] Validation failed: sets is not a valid array', {
-        isArray: Array.isArray(sets),
-        length: sets?.length,
-        type: typeof sets
-      });
-      return res.status(400).json({ error: 'sets must be a non-empty array' });
-    }
-
-    // Validate all sets have required fields
-    for (const set of sets) {
-      if (!set.exercise_id || set.set_number === undefined) {
-        console.error('[BATCH] Validation failed: missing required fields', { set });
-        return res.status(400).json({ error: 'Each set must have exercise_id and set_number' });
-      }
-    }
-
-    console.log('[BATCH] Starting transaction for', sets.length, 'sets');
-
-    // Insert all sets in a single transaction
-    await db.runAsync('BEGIN TRANSACTION');
-
-    try {
-      const insertedSets = [];
-
-      for (const set of sets) {
-        const { exercise_id, set_number, is_warmup = 0, reps, weight, completed = 0, notes } = set;
-
-        const result = await db.runAsync(`
-          INSERT INTO workout_sets (workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes || null]);
-
-        const insertedSet = await db.getAsync('SELECT * FROM workout_sets WHERE id = ?', result.lastID);
-        insertedSets.push(insertedSet);
-      }
-
-      await db.runAsync('COMMIT');
-      console.log('[BATCH] Successfully inserted', insertedSets.length, 'sets');
-      res.status(201).json({ sets: insertedSets });
-    } catch (err) {
-      console.error('[BATCH] Transaction failed, rolling back:', err);
-      await db.runAsync('ROLLBACK');
-      throw err;
-    }
-  } catch (error) {
-    console.error('[BATCH] Error in batch endpoint:', error);
-    res.status(500).json({ error: error.message, stack: error.stack });
-  }
-});
-
-// Add a single set to a workout
+// Add a set to a workout
 router.post('/:workout_id/sets', (req, res) => {
   try {
     const { workout_id } = req.params;

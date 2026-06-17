@@ -44,34 +44,23 @@ export function useAddSet() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ workoutId, data }) => api.addSet(workoutId, data),
-    onSuccess: (_, { workoutId }) => {
-      queryClient.invalidateQueries({ queryKey: ['workout', workoutId] });
-    },
-  });
-}
-
-export function useAddSetsBatch() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ workoutId, sets }) => {
-      console.log('[useAddSetsBatch] Mutation starting', { workoutId, setsCount: sets.length });
+    mutationFn: async ({ workoutId, data }) => {
+      console.log('[useAddSet] Mutation starting', { workoutId, data });
       try {
-        const result = await api.addSetsBatch(workoutId, sets);
-        console.log('[useAddSetsBatch] Mutation succeeded', { result });
+        const result = await api.addSet(workoutId, data);
+        console.log('[useAddSet] Mutation succeeded', { result });
         return result;
       } catch (error) {
-        console.error('[useAddSetsBatch] Mutation failed', { error, workoutId, sets });
+        console.error('[useAddSet] Mutation failed', { error, workoutId, data });
         throw error;
       }
     },
-    onSuccess: (data, { workoutId }) => {
-      console.log('[useAddSetsBatch] onSuccess - invalidating workout query', { workoutId });
+    onSuccess: (_, { workoutId }) => {
+      console.log('[useAddSet] onSuccess - invalidating workout query', { workoutId });
       queryClient.invalidateQueries({ queryKey: ['workout', workoutId] });
     },
     onError: (error, variables) => {
-      console.error('[useAddSetsBatch] onError callback', { error, variables });
+      console.error('[useAddSet] onError callback', { error, variables });
     },
   });
 }

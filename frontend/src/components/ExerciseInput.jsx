@@ -4,7 +4,7 @@ import PlateCalculator from './PlateCalculator';
 import WeightInput from './WeightInput';
 import RepsInput from './RepsInput';
 
-export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSetsBatch, onUpdateSet, onDeleteSet, sets }) {
+export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateSet, onDeleteSet, sets }) {
   const { data: lastWeight } = useLastWeight(exercise.id);
   const { data: pr } = usePR(exercise.id);
   const { data: lastSession } = useLastSession(exercise.id);
@@ -14,15 +14,15 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
   const [showPRCelebration, setShowPRCelebration] = useState(false);
   const [currentSetForInput, setCurrentSetForInput] = useState(null);
   const initializedExercisesRef = useRef(new Set());
-  const onAddSetsBatchRef = useRef(onAddSetsBatch);
+  const onAddSetRef = useRef(onAddSet);
 
   const isWeightTracked = exercise.is_weight_tracked;
   const usesBarbell = exercise.bar_weight > 0;
 
   // Keep ref updated with latest callback
   useEffect(() => {
-    onAddSetsBatchRef.current = onAddSetsBatch;
-  }, [onAddSetsBatch]);
+    onAddSetRef.current = onAddSet;
+  }, [onAddSet]);
 
   // Initialize sets if needed - track by exercise ID to prevent duplicate calls per exercise
   useEffect(() => {
@@ -86,16 +86,21 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
       });
     }
 
-    // Add all sets at once using batch endpoint (single API call, single invalidation)
-    console.log('[ExerciseInput] Calling onAddSetsBatch with', setsToCreate.length, 'sets:', setsToCreate);
+    // Add sets one at a time with small delays to prevent overwhelming React Query
+    console.log('[ExerciseInput] Adding', setsToCreate.length, 'sets sequentially');
 
-    // Use ref to avoid dependency on onAddSetsBatch which may change
-    try {
-      onAddSetsBatchRef.current(setsToCreate);
-      console.log('[ExerciseInput] onAddSetsBatch called successfully');
-    } catch (error) {
-      console.error('[ExerciseInput] Error calling onAddSetsBatch:', error);
-    }
+    // Use ref to avoid dependency on onAddSet which may change
+    setsToCreate.forEach((set, index) => {
+      // Add small delay between sets to prevent concurrent mutations
+      setTimeout(() => {
+        console.log('[ExerciseInput] Adding set', index + 1, 'of', setsToCreate.length);
+        try {
+          onAddSetRef.current(set);
+        } catch (error) {
+          console.error('[ExerciseInput] Error adding set:', error, set);
+        }
+      }, index * 50); // 50ms delay between each set
+    });
   }, [exercise.id]); // Re-run when exercise changes
 
   const handleToggleSet = useCallback((set) => {
