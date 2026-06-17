@@ -20,20 +20,10 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
 
   // Initialize sets if needed - track by exercise ID to prevent duplicate calls per exercise
   useEffect(() => {
-    console.log('[ExerciseInput] useEffect running', {
-      exerciseId: exercise.id,
-      exerciseName: exercise.name,
-      isWeightTracked,
-      setsLength: sets.length,
-      hasInitialized: initializedExercisesRef.current.has(exercise.id)
-    });
-
     if (!isWeightTracked || sets.length > 0 || initializedExercisesRef.current.has(exercise.id)) {
-      console.log('[ExerciseInput] Early return - skipping set creation');
       return;
     }
 
-    console.log('[ExerciseInput] Creating sets for exercise', exercise.name);
     initializedExercisesRef.current.add(exercise.id);
 
     // Batch all set creations together
@@ -80,7 +70,6 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
     }
 
     // Add all sets at once using batch endpoint (single API call, single invalidation)
-    console.log('[ExerciseInput] Adding', setsToCreate.length, 'sets via batch');
     onAddSetsBatch(setsToCreate);
   }, [exercise.id]); // Re-run when exercise changes
 
