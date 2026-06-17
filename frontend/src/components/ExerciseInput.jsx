@@ -14,12 +14,19 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
   const [showPRCelebration, setShowPRCelebration] = useState(false);
   const [currentSetForInput, setCurrentSetForInput] = useState(null);
   const initializedExercisesRef = useRef(new Set());
+  const onAddSetRef = useRef(onAddSet);
 
   const isWeightTracked = exercise.is_weight_tracked;
   const usesBarbell = exercise.bar_weight > 0;
 
+  // Keep ref updated with latest onAddSet
+  useEffect(() => {
+    onAddSetRef.current = onAddSet;
+  }, [onAddSet]);
+
   // Initialize sets if needed - track by exercise ID to prevent duplicate calls per exercise
   useEffect(() => {
+    // Early return checks - these prevent the effect from doing anything
     if (!isWeightTracked || sets.length > 0 || initializedExercisesRef.current.has(exercise.id)) {
       return;
     }
@@ -69,20 +76,22 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
       });
     }
 
-    // Add all sets at once
-    setsToCreate.forEach(set => onAddSet(set));
+    // Add all sets at once using the ref to avoid dependency issues
+    setsToCreate.forEach(set => onAddSetRef.current(set));
   }, [
+    // Dependencies: only values we READ to compute the sets
+    // The ref (initializedExercisesRef) prevents duplicate initialization
     exercise.id,
     exercise.default_warmup_sets,
     exercise.default_working_sets,
     exercise.default_reps,
     exercise.bar_weight,
-    isWeightTracked,
-    sets.length,
     lastWeight,
     lastSession,
-    usesBarbell,
-    onAddSet
+    // Excluded to prevent infinite loops:
+    // - sets.length: would cause re-run after sets are created
+    // - isWeightTracked: constant for an exercise
+    // - onAddSet: accessed via ref instead
   ]);
 
   const handleToggleSet = useCallback((set) => {
