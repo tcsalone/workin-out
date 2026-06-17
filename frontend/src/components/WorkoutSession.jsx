@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExercises } from '../hooks/useExercises';
 import { useWorkout, useAddSet, useUpdateSet, useDeleteSet, useUpdateWorkout } from '../hooks/useWorkouts';
@@ -15,6 +15,19 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const updateWorkout = useUpdateWorkout();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+
+  // Memoize callbacks to prevent infinite loops in ExerciseInput useEffect
+  const handleAddSet = useCallback((data) => {
+    addSet.mutate({ workoutId, data });
+  }, [addSet, workoutId]);
+
+  const handleUpdateSet = useCallback((id, data, wId) => {
+    updateSet.mutate({ id, data, workoutId: wId || workoutId });
+  }, [updateSet, workoutId]);
+
+  const handleDeleteSet = useCallback((id) => {
+    deleteSet.mutate({ id, workoutId });
+  }, [deleteSet, workoutId]);
 
   if (exercisesLoading || workoutLoading) {
     return (
@@ -35,6 +48,11 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const currentExercise = exercises[currentExerciseIndex];
   const nextExercise = exercises[currentExerciseIndex + 1];
   const isLastExercise = currentExerciseIndex === exercises.length - 1;
+
+  // Memoize filtered sets to prevent new array reference on each render
+  const currentExerciseSets = useMemo(() => {
+    return workout?.sets?.filter(s => s.exercise_id === currentExercise.id) || [];
+  }, [workout?.sets, currentExercise.id]);
 
   // Prefetch data for the next exercise to eliminate loading delay
   useEffect(() => {
@@ -142,10 +160,10 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
         <ExerciseInput
           exercise={currentExercise}
           workoutId={workoutId}
-          onAddSet={(data) => addSet.mutate({ workoutId, data })}
-          onUpdateSet={(id, data, wId) => updateSet.mutate({ id, data, workoutId: wId || workoutId })}
-          onDeleteSet={(id) => deleteSet.mutate({ id, workoutId })}
-          sets={workout?.sets?.filter(s => s.exercise_id === currentExercise.id) || []}
+          onAddSet={handleAddSet}
+          onUpdateSet={handleUpdateSet}
+          onDeleteSet={handleDeleteSet}
+          sets={currentExerciseSets}
         />
       </div>
 
