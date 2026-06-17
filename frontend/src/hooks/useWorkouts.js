@@ -51,6 +51,17 @@ export function useAddSet() {
   });
 }
 
+export function useAddSetsBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ workoutId, sets }) => api.addSetsBatch(workoutId, sets),
+    onSuccess: (_, { workoutId }) => {
+      queryClient.invalidateQueries({ queryKey: ['workout', workoutId] });
+    },
+  });
+}
+
 export function useUpdateSet() {
   const queryClient = useQueryClient();
 

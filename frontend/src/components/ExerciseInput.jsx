@@ -4,7 +4,7 @@ import PlateCalculator from './PlateCalculator';
 import WeightInput from './WeightInput';
 import RepsInput from './RepsInput';
 
-export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateSet, onDeleteSet, sets }) {
+export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSetsBatch, onUpdateSet, onDeleteSet, sets }) {
   const { data: lastWeight } = useLastWeight(exercise.id);
   const { data: pr } = usePR(exercise.id);
   const { data: lastSession } = useLastSession(exercise.id);
@@ -79,12 +79,9 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
       });
     }
 
-    // Add all sets at once
-    console.log('[ExerciseInput] Adding', setsToCreate.length, 'sets');
-    setsToCreate.forEach((set, index) => {
-      console.log('[ExerciseInput] Calling onAddSet for set', index + 1);
-      onAddSet(set);
-    });
+    // Add all sets at once using batch endpoint (single API call, single invalidation)
+    console.log('[ExerciseInput] Adding', setsToCreate.length, 'sets via batch');
+    onAddSetsBatch(setsToCreate);
   }, [exercise.id]); // Re-run when exercise changes
 
   const handleToggleSet = useCallback((set) => {

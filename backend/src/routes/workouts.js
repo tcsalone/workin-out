@@ -171,6 +171,52 @@ router.post('/:workout_id/sets', (req, res) => {
   }
 });
 
+// Add multiple sets at once (batch operation)
+router.post('/:workout_id/sets/batch', async (req, res) => {
+  try {
+    const { workout_id } = req.params;
+    const { sets } = req.body;
+
+    if (!Array.isArray(sets) || sets.length === 0) {
+      return res.status(400).json({ error: 'sets must be a non-empty array' });
+    }
+
+    // Validate all sets have required fields
+    for (const set of sets) {
+      if (!set.exercise_id || set.set_number === undefined) {
+        return res.status(400).json({ error: 'Each set must have exercise_id and set_number' });
+      }
+    }
+
+    // Insert all sets in a single transaction
+    await db.runAsync('BEGIN TRANSACTION');
+
+    try {
+      const insertedSets = [];
+
+      for (const set of sets) {
+        const { exercise_id, set_number, is_warmup = 0, reps, weight, completed = 0, notes } = set;
+
+        const result = await db.runAsync(`
+          INSERT INTO workout_sets (workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes || null]);
+
+        const insertedSet = await db.getAsync('SELECT * FROM workout_sets WHERE id = ?', result.lastID);
+        insertedSets.push(insertedSet);
+      }
+
+      await db.runAsync('COMMIT');
+      res.status(201).json({ sets: insertedSets });
+    } catch (err) {
+      await db.runAsync('ROLLBACK');
+      throw err;
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Update a set
 router.put('/sets/:id', (req, res) => {
   try {

@@ -10,7 +10,13 @@
       "Bash(npm run *)",
       "Bash(pkill -f \"node src/server.js\")",
       "Bash(chmod +x *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(gcloud config *)",
+      "Bash(gcloud auth *)",
+      "Bash(git push *)",
+      "WebFetch(domain:workin-out.eamongreeley.com)"
     ]
   }
 }

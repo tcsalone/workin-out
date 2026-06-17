@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExercises } from '../hooks/useExercises';
-import { useWorkout, useAddSet, useUpdateSet, useDeleteSet, useUpdateWorkout } from '../hooks/useWorkouts';
+import { useWorkout, useAddSet, useAddSetsBatch, useUpdateSet, useDeleteSet, useUpdateWorkout } from '../hooks/useWorkouts';
 import { api } from '../api/client';
 import ExerciseInput from './ExerciseInput';
 
@@ -10,6 +10,7 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const { data: exercises, isLoading: exercisesLoading } = useExercises(workoutType);
   const { data: workout, isLoading: workoutLoading } = useWorkout(workoutId);
   const addSet = useAddSet();
+  const addSetsBatch = useAddSetsBatch();
   const updateSet = useUpdateSet();
   const deleteSet = useDeleteSet();
   const updateWorkout = useUpdateWorkout();
@@ -20,6 +21,10 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const handleAddSet = useCallback((data) => {
     addSet.mutate({ workoutId, data });
   }, [addSet, workoutId]);
+
+  const handleAddSetsBatch = useCallback((sets) => {
+    addSetsBatch.mutate({ workoutId, sets });
+  }, [addSetsBatch, workoutId]);
 
   const handleUpdateSet = useCallback((id, data, wId) => {
     updateSet.mutate({ id, data, workoutId: wId || workoutId });
@@ -161,6 +166,7 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
           exercise={currentExercise}
           workoutId={workoutId}
           onAddSet={handleAddSet}
+          onAddSetsBatch={handleAddSetsBatch}
           onUpdateSet={handleUpdateSet}
           onDeleteSet={handleDeleteSet}
           sets={currentExerciseSets}

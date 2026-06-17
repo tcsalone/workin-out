@@ -60,6 +60,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  addSetsBatch: (workoutId, sets) =>
+    fetchJSON(`/workouts/${workoutId}/sets/batch`, {
+      method: 'POST',
+      body: JSON.stringify({ sets }),
+    }),
+
   updateSet: (id, data) =>
     fetchJSON(`/workouts/sets/${id}`, {
       method: 'PUT',
