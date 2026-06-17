@@ -43,6 +43,9 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
     console.log('[ExerciseInput] Marking exercise as initialized:', exercise.id);
     initializedExercisesRef.current.add(exercise.id);
 
+    // Track timeouts for cleanup
+    const timeouts = [];
+
     // Batch all set creations together
     const setsToCreate = [];
 
@@ -92,7 +95,7 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
     // Use ref to avoid dependency on onAddSet which may change
     setsToCreate.forEach((set, index) => {
       // Add small delay between sets to prevent concurrent mutations
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         console.log('[ExerciseInput] Adding set', index + 1, 'of', setsToCreate.length);
         try {
           onAddSetRef.current(set);
@@ -100,7 +103,15 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onUpdateS
           console.error('[ExerciseInput] Error adding set:', error, set);
         }
       }, index * 50); // 50ms delay between each set
+
+      timeouts.push(timeoutId);
     });
+
+    // Cleanup: cancel all pending timeouts if component unmounts or re-renders
+    return () => {
+      console.log('[ExerciseInput] Cleanup - canceling', timeouts.length, 'pending timeouts');
+      timeouts.forEach(id => clearTimeout(id));
+    };
   }, [exercise.id]); // Re-run when exercise changes
 
   const handleToggleSet = useCallback((set) => {
