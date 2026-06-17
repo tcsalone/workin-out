@@ -14,9 +14,15 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
   const [showPRCelebration, setShowPRCelebration] = useState(false);
   const [currentSetForInput, setCurrentSetForInput] = useState(null);
   const initializedExercisesRef = useRef(new Set());
+  const onAddSetsBatchRef = useRef(onAddSetsBatch);
 
   const isWeightTracked = exercise.is_weight_tracked;
   const usesBarbell = exercise.bar_weight > 0;
+
+  // Keep ref updated with latest callback
+  useEffect(() => {
+    onAddSetsBatchRef.current = onAddSetsBatch;
+  }, [onAddSetsBatch]);
 
   // Initialize sets if needed - track by exercise ID to prevent duplicate calls per exercise
   useEffect(() => {
@@ -70,7 +76,8 @@ export default function ExerciseInput({ exercise, workoutId, onAddSet, onAddSets
     }
 
     // Add all sets at once using batch endpoint (single API call, single invalidation)
-    onAddSetsBatch(setsToCreate);
+    // Use ref to avoid dependency on onAddSetsBatch which may change
+    onAddSetsBatchRef.current(setsToCreate);
   }, [exercise.id]); // Re-run when exercise changes
 
   const handleToggleSet = useCallback((set) => {

@@ -141,37 +141,8 @@ router.delete('/:id', (req, res) => {
   }
 });
 
-// Add a set to a workout
-router.post('/:workout_id/sets', (req, res) => {
-  try {
-    const { workout_id } = req.params;
-    const { exercise_id, set_number, is_warmup = 0, reps, weight, completed = 0, notes } = req.body;
-
-    if (!exercise_id || set_number === undefined) {
-      return res.status(400).json({ error: 'exercise_id and set_number are required' });
-    }
-
-    db.run(`
-      INSERT INTO workout_sets (workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes || null], function(err) {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      db.get('SELECT * FROM workout_sets WHERE id = ?', [this.lastID], (err, set) => {
-        if (err) {
-          return res.status(500).json({ error: err.message });
-        }
-        res.status(201).json(set);
-      });
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Add multiple sets at once (batch operation)
+// IMPORTANT: This route MUST come before /:workout_id/sets to match /batch correctly
 router.post('/:workout_id/sets/batch', async (req, res) => {
   try {
     const { workout_id } = req.params;
@@ -212,6 +183,36 @@ router.post('/:workout_id/sets/batch', async (req, res) => {
       await db.runAsync('ROLLBACK');
       throw err;
     }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add a single set to a workout
+router.post('/:workout_id/sets', (req, res) => {
+  try {
+    const { workout_id } = req.params;
+    const { exercise_id, set_number, is_warmup = 0, reps, weight, completed = 0, notes } = req.body;
+
+    if (!exercise_id || set_number === undefined) {
+      return res.status(400).json({ error: 'exercise_id and set_number are required' });
+    }
+
+    db.run(`
+      INSERT INTO workout_sets (workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [workout_id, exercise_id, set_number, is_warmup, reps, weight, completed, notes || null], function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+
+      db.get('SELECT * FROM workout_sets WHERE id = ?', [this.lastID], (err, set) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json(set);
+      });
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
