@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExercises } from '../hooks/useExercises';
 import { useWorkout, useAddSet, useUpdateSet, useDeleteSet, useUpdateWorkout } from '../hooks/useWorkouts';
@@ -6,8 +6,6 @@ import { api } from '../api/client';
 import ExerciseInput from './ExerciseInput';
 
 export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
-  console.log('[WorkoutSession] Rendering', { workoutId, workoutType });
-
   const queryClient = useQueryClient();
   const { data: exercises, isLoading: exercisesLoading } = useExercises(workoutType);
   const { data: workout, isLoading: workoutLoading } = useWorkout(workoutId);
@@ -17,29 +15,6 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const updateWorkout = useUpdateWorkout();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
-
-  // Log actual values, not objects
-  console.log('[WorkoutSession] State:',
-    'exercisesLoading:', exercisesLoading,
-    'workoutLoading:', workoutLoading,
-    'exercisesCount:', exercises?.length,
-    'workoutSetsCount:', workout?.sets?.length,
-    'currentExerciseIndex:', currentExerciseIndex
-  );
-
-  // Memoize callbacks to prevent infinite loops in ExerciseInput useEffect
-  const handleAddSet = useCallback((data) => {
-    console.log('[WorkoutSession] handleAddSet called', data);
-    addSet.mutate({ workoutId, data });
-  }, [addSet, workoutId]);
-
-  const handleUpdateSet = useCallback((id, data, wId) => {
-    updateSet.mutate({ id, data, workoutId: wId || workoutId });
-  }, [updateSet, workoutId]);
-
-  const handleDeleteSet = useCallback((id) => {
-    deleteSet.mutate({ id, workoutId });
-  }, [deleteSet, workoutId]);
 
   if (exercisesLoading || workoutLoading) {
     return (
@@ -60,10 +35,6 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const currentExercise = exercises[currentExerciseIndex];
   const nextExercise = exercises[currentExerciseIndex + 1];
   const isLastExercise = currentExerciseIndex === exercises.length - 1;
-
-  // Don't memoize - just compute directly. The parent memoized callbacks are enough.
-  // Memoizing with workout?.sets causes infinite loops because React Query returns new array refs
-  const currentExerciseSets = workout?.sets?.filter(s => s.exercise_id === currentExercise?.id) || [];
 
   // Prefetch data for the next exercise to eliminate loading delay
   useEffect(() => {
@@ -171,10 +142,10 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
         <ExerciseInput
           exercise={currentExercise}
           workoutId={workoutId}
-          onAddSet={handleAddSet}
-          onUpdateSet={handleUpdateSet}
-          onDeleteSet={handleDeleteSet}
-          sets={currentExerciseSets}
+          onAddSet={(data) => addSet.mutate({ workoutId, data })}
+          onUpdateSet={(id, data, wId) => updateSet.mutate({ id, data, workoutId: wId || workoutId })}
+          onDeleteSet={(id) => deleteSet.mutate({ id, workoutId })}
+          sets={workout?.sets?.filter(s => s.exercise_id === currentExercise.id) || []}
         />
       </div>
 
