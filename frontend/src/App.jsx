@@ -15,6 +15,43 @@ function App() {
   const [detailWorkout, setDetailWorkout] = useState(null);
   const { data: lastCompleted } = useLastCompleted();
 
+  const setView = useCallback((view) => {
+    setCurrentView(view);
+    try {
+      const newHash = view === 'start' ? '' : `#${view}`;
+      if (window.location.hash !== newHash) {
+        window.location.hash = newHash;
+      }
+    } catch {
+      // ignore URL update errors (e.g. restricted environments)
+    }
+  }, []);
+
+  // Hash-based routing so screens are directly addressable (/#history, /#settings, etc.)
+  useEffect(() => {
+    const allowed = new Set(['start', 'history', 'settings']);
+
+    const applyHash = () => {
+      const raw = (window.location.hash || '').replace(/^#/, '');
+      if (!raw) {
+        setCurrentView('start');
+        return;
+      }
+
+      if (allowed.has(raw)) {
+        setCurrentView(raw);
+        return;
+      }
+
+      // Unknown hash -> normalize to start
+      setCurrentView('start');
+    };
+
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
+  }, []);
+
   // Helper to safely check Notification support - memoized to prevent recreating on each render
   const isNotificationSupported = useCallback(() => {
     return 'Notification' in window && typeof Notification !== 'undefined';
@@ -93,43 +130,43 @@ function App() {
 
   const handleWorkoutStarted = (workoutId, workoutType) => {
     setCurrentWorkout({ id: workoutId, type: workoutType });
-    setCurrentView('workout');
+    setView('workout');
   };
 
   const handleWorkoutFinished = () => {
     setCurrentWorkout(null);
-    setCurrentView('start');
+    setView('start');
   };
 
   const handleViewHistory = () => {
-    setCurrentView('history');
+    setView('history');
   };
 
   const handleCloseHistory = () => {
-    setCurrentView('start');
+    setView('start');
   };
 
   const handleContinueWorkout = (workoutId, workoutType) => {
     setCurrentWorkout({ id: workoutId, type: workoutType });
-    setCurrentView('workout');
+    setView('workout');
   };
 
   const handleViewWorkout = (workoutId, workoutType) => {
     setDetailWorkout({ id: workoutId, type: workoutType });
-    setCurrentView('workout-detail');
+    setView('workout-detail');
   };
 
   const handleCloseWorkoutDetail = () => {
     setDetailWorkout(null);
-    setCurrentView('history');
+    setView('history');
   };
 
   const handleViewSettings = () => {
-    setCurrentView('settings');
+    setView('settings');
   };
 
   const handleCloseSettings = () => {
-    setCurrentView('start');
+    setView('start');
   };
 
   return (
