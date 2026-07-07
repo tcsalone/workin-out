@@ -7,6 +7,27 @@ export default function WorkoutHistory({ onClose, onContinueWorkout, onViewWorko
   const deleteWorkout = useDeleteWorkout();
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
+  const formatSessionDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const formatCompletedAt = (completedAt) => {
+    if (!completedAt) return null;
+    const date = new Date(completedAt);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
   const handleDeleteWorkout = async (id) => {
     try {
       await deleteWorkout.mutateAsync(id);
@@ -60,12 +81,16 @@ export default function WorkoutHistory({ onClose, onContinueWorkout, onViewWorko
                 </div>
 
                 <div className="text-gray-400 text-sm mb-3">
-                  {new Date(workout.date).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
+                  <div>
+                    <span className="text-gray-500">Session date:</span>{' '}
+                    <span>{formatSessionDate(workout.date)}</span>
+                  </div>
+                  {workout.completed_at && (
+                    <div className="mt-1">
+                      <span className="text-gray-500">Completed:</span>{' '}
+                      <span>{formatCompletedAt(workout.completed_at)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-4 text-sm mb-4">
