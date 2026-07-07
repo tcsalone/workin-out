@@ -18,7 +18,10 @@ function App() {
   const setView = useCallback((view) => {
     setCurrentView(view);
     try {
-      const newHash = view === 'start' ? '' : `#${view}`;
+      // Only expose stable, top-level pages via URL hash.
+      // Workout flows require in-memory state (ids), so keep them un-hashed.
+      const hashableViews = new Set(['history', 'settings']);
+      const newHash = hashableViews.has(view) ? `#${view}` : '';
       if (window.location.hash !== newHash) {
         window.location.hash = newHash;
       }
