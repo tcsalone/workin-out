@@ -6,11 +6,13 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load components that aren't needed immediately
 const WorkoutHistory = lazy(() => import('./components/WorkoutHistory'));
+const WorkoutDetail = lazy(() => import('./components/WorkoutDetail'));
 const Settings = lazy(() => import('./components/Settings'));
 
 function App() {
-  const [currentView, setCurrentView] = useState('start'); // 'start', 'workout', 'history', 'settings'
+  const [currentView, setCurrentView] = useState('start'); // 'start', 'workout', 'history', 'workout-detail', 'settings'
   const [currentWorkout, setCurrentWorkout] = useState(null);
+  const [detailWorkout, setDetailWorkout] = useState(null);
   const { data: lastCompleted } = useLastCompleted();
 
   // Helper to safely check Notification support - memoized to prevent recreating on each render
@@ -107,6 +109,21 @@ function App() {
     setCurrentView('start');
   };
 
+  const handleContinueWorkout = (workoutId, workoutType) => {
+    setCurrentWorkout({ id: workoutId, type: workoutType });
+    setCurrentView('workout');
+  };
+
+  const handleViewWorkout = (workoutId, workoutType) => {
+    setDetailWorkout({ id: workoutId, type: workoutType });
+    setCurrentView('workout-detail');
+  };
+
+  const handleCloseWorkoutDetail = () => {
+    setDetailWorkout(null);
+    setCurrentView('history');
+  };
+
   const handleViewSettings = () => {
     setCurrentView('settings');
   };
@@ -140,7 +157,25 @@ function App() {
               <div className="text-gray-400">Loading...</div>
             </div>
           }>
-            <WorkoutHistory onClose={handleCloseHistory} />
+            <WorkoutHistory
+              onClose={handleCloseHistory}
+              onContinueWorkout={handleContinueWorkout}
+              onViewWorkout={handleViewWorkout}
+            />
+          </Suspense>
+        )}
+
+        {currentView === 'workout-detail' && detailWorkout && (
+          <Suspense fallback={
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+              <div className="text-gray-400">Loading...</div>
+            </div>
+          }>
+            <WorkoutDetail
+              workoutId={detailWorkout.id}
+              workoutType={detailWorkout.type}
+              onClose={handleCloseWorkoutDetail}
+            />
           </Suspense>
         )}
 

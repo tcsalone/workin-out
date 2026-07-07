@@ -76,6 +76,9 @@ export const api = {
   getNextWorkout: () =>
     fetchJSON('/stats/next-workout'),
 
+  getInProgressWorkouts: () =>
+    fetchJSON('/stats/in-progress'),
+
   getHistory: (limit = 10) =>
     fetchJSON(`/stats/history?limit=${limit}`),
 

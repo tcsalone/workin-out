@@ -31,12 +31,13 @@ router.get('/last-weight', async (req, res) => {
   }
 });
 
-// Suggest next workout type (A or B)
+// Suggest next workout type (A or B) - only based on completed workouts
 router.get('/next-workout', async (req, res) => {
   try {
     const lastWorkout = await db.getAsync(`
       SELECT workout_type FROM workouts
-      ORDER BY date DESC, created_at DESC
+      WHERE completed_at IS NOT NULL
+      ORDER BY date DESC, completed_at DESC
       LIMIT 1
     `);
 
@@ -46,6 +47,32 @@ router.get('/next-workout', async (req, res) => {
     }
 
     res.json({ next_workout_type: nextWorkoutType });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get all in-progress workouts
+router.get('/in-progress', async (req, res) => {
+  try {
+    const inProgress = await db.allAsync(`
+      SELECT
+        w.id,
+        w.workout_type,
+        w.date,
+        w.started_at,
+        w.completed_at,
+        COUNT(DISTINCT ws.exercise_id) as exercises_count,
+        COUNT(ws.id) as total_sets,
+        SUM(CASE WHEN ws.completed = 1 THEN 1 ELSE 0 END) as completed_sets
+      FROM workouts w
+      LEFT JOIN workout_sets ws ON w.id = ws.workout_id
+      WHERE w.completed_at IS NULL
+      GROUP BY w.id
+      ORDER BY w.date DESC, w.created_at DESC
+    `);
+
+    res.json(inProgress);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

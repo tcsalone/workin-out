@@ -36,6 +36,7 @@ export function useUpdateWorkout() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['workout', id] });
       queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
   });
 }
@@ -146,6 +147,26 @@ export function useLastCompleted() {
     queryKey: ['stats', 'last-completed'],
     queryFn: api.getLastCompleted,
     staleTime: 30000, // 30 seconds
+  });
+}
+
+export function useInProgressWorkouts() {
+  return useQuery({
+    queryKey: ['stats', 'in-progress'],
+    queryFn: api.getInProgressWorkouts,
+    staleTime: 10000,
+  });
+}
+
+export function useDeleteWorkout() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => api.deleteWorkout(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+    },
   });
 }
 

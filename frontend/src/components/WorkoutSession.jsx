@@ -15,10 +15,27 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const updateWorkout = useUpdateWorkout();
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [hasInitializedIndex, setHasInitializedIndex] = useState(false);
 
   const currentExercise = exercises?.[currentExerciseIndex];
   const nextExercise = exercises?.[currentExerciseIndex + 1];
   const isLastExercise = currentExerciseIndex === (exercises?.length || 0) - 1;
+
+  // On resume, jump to first exercise with incomplete sets
+  useEffect(() => {
+    if (hasInitializedIndex || !exercises?.length || !workout?.sets) return;
+
+    const firstIncompleteIndex = exercises.findIndex((exercise) => {
+      const exerciseSets = workout.sets.filter(s => s.exercise_id === exercise.id);
+      if (exerciseSets.length === 0) return true;
+      return exerciseSets.some(s => !s.completed);
+    });
+
+    if (firstIncompleteIndex > 0) {
+      setCurrentExerciseIndex(firstIncompleteIndex);
+    }
+    setHasInitializedIndex(true);
+  }, [exercises, workout?.sets, hasInitializedIndex]);
 
   // Prefetch data for the next exercise to eliminate loading delay
   useEffect(() => {
