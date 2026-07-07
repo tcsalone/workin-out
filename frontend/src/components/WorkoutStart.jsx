@@ -1,14 +1,11 @@
-import { useMemo, useState, memo } from 'react';
+import { useMemo, memo } from 'react';
 import { useNextWorkout } from '../hooks/useExercises';
-import { useCreateWorkout, useLastCompleted, useInProgressWorkouts, useDeleteWorkout } from '../hooks/useWorkouts';
+import { useCreateWorkout, useLastCompleted } from '../hooks/useWorkouts';
 
 function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSettings }) {
   const { data: nextWorkout, isLoading } = useNextWorkout();
   const { data: lastCompleted } = useLastCompleted();
-  const { data: inProgressWorkouts } = useInProgressWorkouts();
   const createWorkout = useCreateWorkout();
-  const deleteWorkout = useDeleteWorkout();
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   const daysSinceLastWorkout = useMemo(() => {
     if (!lastCompleted?.workoutA && !lastCompleted?.workoutB) return null;
@@ -41,15 +38,6 @@ function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSettings }) {
     });
   };
 
-  const formatWorkoutDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
   const handleStartWorkout = async (type) => {
     try {
       const workout = await createWorkout.mutateAsync({
@@ -60,16 +48,6 @@ function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSettings }) {
     } catch (error) {
       console.error('Failed to create workout:', error);
       alert('Failed to start workout. Please try again.');
-    }
-  };
-
-  const handleDeleteWorkout = async (id) => {
-    try {
-      await deleteWorkout.mutateAsync(id);
-      setDeleteConfirmId(null);
-    } catch (error) {
-      console.error('Failed to delete workout:', error);
-      alert('Failed to delete workout. Please try again.');
     }
   };
 
@@ -111,45 +89,6 @@ function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSettings }) {
                 </p>
               </div>
             </div>
-          </div>
-        )}
-
-        {inProgressWorkouts && inProgressWorkouts.length > 0 && (
-          <div className="mb-8 space-y-3">
-            <h2 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide">
-              Continue Workout
-            </h2>
-            {inProgressWorkouts.map((workout) => (
-              <div
-                key={workout.id}
-                className="card border border-yellow-700/50 bg-yellow-900/10"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-bold">Workout {workout.workout_type}</h3>
-                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-900 text-yellow-300">
-                    In Progress
-                  </span>
-                </div>
-                <p className="text-gray-400 text-sm mb-2">{formatWorkoutDate(workout.date)}</p>
-                <p className="text-sm text-gray-500 mb-4">
-                  {workout.completed_sets || 0}/{workout.total_sets || 0} sets completed
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onWorkoutStarted(workout.id, workout.workout_type)}
-                    className="flex-1 py-3 bg-primary-600 hover:bg-primary-700 rounded-lg font-semibold transition-colors"
-                  >
-                    Continue
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirmId(workout.id)}
-                    className="px-4 py-3 bg-gray-700 hover:bg-red-900/50 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
         )}
 
@@ -200,32 +139,6 @@ function WorkoutStart({ onWorkoutStarted, onViewHistory, onViewSettings }) {
           </button>
         </div>
       </div>
-
-      {deleteConfirmId && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-xl font-bold mb-4">Delete in-progress workout?</h3>
-            <p className="text-gray-300 mb-6">
-              This will permanently delete this workout and all logged sets. This cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 btn bg-gray-700 hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteWorkout(deleteConfirmId)}
-                disabled={deleteWorkout.isPending}
-                className="flex-1 btn bg-red-600 hover:bg-red-700 disabled:opacity-50"
-              >
-                {deleteWorkout.isPending ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
