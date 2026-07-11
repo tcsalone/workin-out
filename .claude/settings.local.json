@@ -16,7 +16,8 @@
       "Bash(gcloud config *)",
       "Bash(gcloud auth *)",
       "Bash(git push *)",
-      "WebFetch(domain:workin-out.eamongreeley.com)"
+      "WebFetch(domain:workin-out.eamongreeley.com)",
+      "Bash(npm test *)"
     ]
   }
 }

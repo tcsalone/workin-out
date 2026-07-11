@@ -23,7 +23,11 @@ function App() {
       const hashableViews = new Set(['history', 'settings']);
       const newHash = hashableViews.has(view) ? `#${view}` : '';
       if (window.location.hash !== newHash) {
-        window.location.hash = newHash;
+        // Use replaceState (not `window.location.hash = ...`) so we don't fire
+        // hashchange — the listener would treat an empty hash as "go to start"
+        // and undo the setCurrentView(view) above.
+        const url = window.location.pathname + window.location.search + newHash;
+        window.history.replaceState(null, '', url);
       }
     } catch {
       // ignore URL update errors (e.g. restricted environments)
@@ -32,25 +36,25 @@ function App() {
 
   // Hash-based routing so screens are directly addressable (/#history, /#settings, etc.)
   useEffect(() => {
-    const allowed = new Set(['start', 'history', 'settings']);
+    const hashableViews = new Set(['history', 'settings']);
+    const initialApplied = { current: false };
 
     const applyHash = () => {
       const raw = (window.location.hash || '').replace(/^#/, '');
-      if (!raw) {
-        setCurrentView('start');
-        return;
-      }
-
-      if (allowed.has(raw)) {
+      if (hashableViews.has(raw)) {
         setCurrentView(raw);
         return;
       }
-
-      // Unknown hash -> normalize to start
-      setCurrentView('start');
+      // Empty or unknown hash: only fall back to 'start' on initial mount.
+      // On later hashchange events, leave in-memory views (workout,
+      // workout-detail) alone so a stray hash clear can't kick the user out.
+      if (!initialApplied.current) {
+        setCurrentView('start');
+      }
     };
 
     applyHash();
+    initialApplied.current = true;
     window.addEventListener('hashchange', applyHash);
     return () => window.removeEventListener('hashchange', applyHash);
   }, []);

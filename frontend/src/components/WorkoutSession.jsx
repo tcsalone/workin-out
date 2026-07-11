@@ -119,7 +119,7 @@ export default function WorkoutSession({ workoutId, workoutType, onFinish }) {
   const completedSetsCount = workout?.sets?.filter(s => s.completed)?.length || 0;
 
   return (
-    <div className="min-h-screen bg-gray-900 pb-20">
+    <div className="min-h-screen bg-gray-900 pb-20" data-testid="workout-session">
       {/* Header */}
       <div className="sticky top-0 bg-gray-800 border-b border-gray-700 px-4 py-4 z-10">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
